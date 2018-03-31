@@ -8,18 +8,22 @@ log = logging.basicConfig(filename='p13_log.txt', filemode='w', level=logging.IN
 class Store(object):
 
     def __init__(self, name, supported_product_types):
-        self.name = name
+        self.__name = name
         self.__assortment = []
         self.__supported_product_types = set()
         self.add_supported_product_types(supported_product_types)
 
     @property
-    def assortment(self):
-        return self.__assortment
+    def name(self):
+        return self.__name
+
+    def change_name(self, new_name):
+        assert isinstance(new_name, str), "new shop's name must be str, but now {}".format(type(new_name))
+        self.__name = new_name
 
     @property
-    def supported_product_types(self):
-        return self.__supported_product_types
+    def assortment(self):
+        return self.__assortment
 
     def add_item(self, item):
         assert isinstance(item, tuple(self.supported_product_types)), (
@@ -28,7 +32,7 @@ class Store(object):
         logging.info('{} was added in {} store'.format(item, self.name))
 
     def add_items(self, items):
-        assert isinstance(items, Iterable), 'items must be iterable'
+        assert isinstance(items, Iterable), 'add_items: items must be iterable'
         for item in items:
             self.add_item(item)
 
@@ -47,15 +51,57 @@ class Store(object):
         self.__assortment = []
         logging.info('all goods were removed from {} store'.format(self.name))
 
+    @property
+    def supported_product_types(self):
+        return self.__supported_product_types
+
     def add_supported_product_type(self, product_type):
-        assert issubclass(product_type, Goods), "Product type must be Goods' subclass"
+        assert issubclass(product_type, Goods), "add_supported_product_type: product type must be Goods' subclass"
         self.__supported_product_types.add(product_type)
         logging.info('{} store supports new type of goods: {}'.format(self.name, product_type))
 
     def add_supported_product_types(self, product_types):
-        assert isinstance(product_types, Iterable), 'product_types must be iterable'
+        assert isinstance(product_types, Iterable), 'add_supported_product_types: product_types must be iterable'
         for product_type in product_types:
             self.add_supported_product_type(product_type)
+
+    def del_supported_product_type(self, product_type):
+        assert issubclass(product_type, Goods), "del_supported_product_type: product type must be Goods' subclass"
+        if product_type not in self.supported_product_types:
+            logging.info("del_supported_product_type: {} not supported in {} store. "
+                         "There's nothing to delete".format(product_type, self.name))
+        else:
+            self.__supported_product_types -= {product_type}
+            logging.info("del_supported_product_type: product type {} was delite "
+                         "from list supported_product_types in {} store. ".format(product_type, self.name))
+            self.remove_items_by_type(product_type)
+
+    def del_supported_product_types(self, product_types):
+        assert isinstance(product_types, Iterable), "del_supported_product_type: product_types must be iterable"
+        for product_type in product_types:
+            self.del_supported_product_type(product_type)
+
+    def del_all_supported_product_types(self):
+        self.__supported_product_types = {}
+        self.__assortment = []
+
+    def change_price_on_products_by_type(self, product_type, price):
+        assert issubclass(product_type, Goods), "change_price_on_products_by_type: product type must be Goods' subclass"
+        products_for_change = filter(lambda x: isinstance(x, product_type), self.assortment)
+        if not products_for_change:
+            logging.info("There are no {} items in {} store.".format(product_type, self.name))
+            return
+        for item in products_for_change:
+            item.set_price(price)
+
+    def change_discount_on_products_by_type(self, product_type, discount):
+        assert issubclass(product_type, Goods), "change_price_on_products_by_type: product type must be Goods' subclass"
+        products_for_change = filter(lambda x: isinstance(x, product_type), self.assortment)
+        if not products_for_change:
+            logging.info("There are no {} items in {} store.".format(product_type, self.name))
+            return
+        for item in products_for_change:
+            item.set_discount(discount)
 
     @property
     def total_cost_without_discount(self):
